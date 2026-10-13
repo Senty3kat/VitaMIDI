@@ -41,8 +41,10 @@ jobs:
 
           cmake --build build/vita \
             --target \
-              psvita_usb_audio_midi.skprx \
-              psvita_usb_audio_midi_client.suprx \
+              psvita_usb_audio_midi_kernel \
+              psvita_usb_audio_midi_client \
+              kernel_stubs \
+              client_stubs \
               public_stub_aliases \
             --parallel 2
 
