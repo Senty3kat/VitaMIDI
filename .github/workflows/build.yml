@@ -74,7 +74,7 @@ jobs:
           \t\t(void)cin;"""
           new = """\t\tevent.cable = 0;
           \t\tif (cable == 0u && (cin == 0x8u || cin == 0x9u) &&
-          \t\t    (bytes[offset + 1u] & 0xf0u) == (cin << 4) &&
+          \t\t    (bytes[offset + 1u] & 0xf0u) == ((unsigned int)cin << 4) &&
           \t\t    bytes[offset + 2u] < 128u && bytes[offset + 3u] < 128u) {
           \t\t\tevent.size = 3;
           \t\t\tevent.data[0] = bytes[offset + 1u];
@@ -178,11 +178,11 @@ jobs:
         run: |
           echo "=== SELF modules ==="
           find upstream/build/vita -type f \
-            \\( -name '*.skprx' -o -name '*.suprx' \\) \
+            \( -name '*.skprx' -o -name '*.suprx' \) \
             -print || true
           echo "=== ELF and archives ==="
           find upstream/build/vita -type f \
-            \\( -name '*.elf' -o -name '*.a' \\) \
+            \( -name '*.elf' -o -name '*.a' \) \
             -print || true
 
       - name: Upload build artifacts
