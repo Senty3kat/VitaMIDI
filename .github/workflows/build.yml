@@ -1,4 +1,5 @@
-name: Build PS Vita USB MIDI core (without SDL scope app)
+```yaml
+name: Build PS Vita USB MIDI modules
 
 on:
   workflow_dispatch:
@@ -18,35 +19,49 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Fetch upstream source
-        run: git clone --depth 1 https://github.com/intermynd-instruments/psvita-usb-audio-midi.git upstream
+        run: |
+          git clone --depth 1 \
+            https://github.com/intermynd-instruments/psvita-usb-audio-midi.git \
+            upstream
 
       - name: Configure Vita build
         working-directory: upstream
         run: |
           export VITASDK="${VITASDK:-/usr/local/vitasdk}"
           export PATH="$VITASDK/bin:$VITASDK/arm-vita-eabi/bin:$PATH"
+
           cmake -S . -B build/vita \
             -DCMAKE_TOOLCHAIN_FILE="$VITASDK/share/vita.toolchain.cmake" \
             -DPSVITA_USB_AUDIO_MIDI_VITA=ON
 
-      - name: Build plugin, client bridge, and stubs only
+      - name: Build kernel plugin, client module, and stubs
         working-directory: upstream
         run: |
           export VITASDK="${VITASDK:-/usr/local/vitasdk}"
           export PATH="$VITASDK/bin:$VITASDK/arm-vita-eabi/bin:$PATH"
-          cmake --build build/vita --target public_stub_aliases --parallel 2
 
-      - name: Show outputs
+          cmake --build build/vita \
+            --target \
+              psvita_usb_audio_midi.skprx \
+              psvita_usb_audio_midi_client.suprx \
+              public_stub_aliases \
+            --parallel 2
+
+      - name: List generated files
+        if: always()
         run: |
-          find upstream/build/vita -maxdepth 2 -type f \
-            \( -name '*.skprx' -o -name '*.suprx' -o -name '*.a' \) -print
+          find upstream/build/vita -type f \
+            \( -name '*.skprx' -o -name '*.suprx' -o -name '*.a' \) \
+            -print || true
 
-      - name: Upload plugin and client artifacts
+      - name: Upload build artifacts
+        if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: vita-usb-midi-core
+          name: vita-usb-midi-modules
           path: |
             upstream/build/vita/*.skprx
             upstream/build/vita/*.suprx
             upstream/build/vita/*.a
           if-no-files-found: error
+```
