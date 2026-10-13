@@ -1,4 +1,3 @@
-```yaml
 name: Build PS Vita USB MIDI modules
 
 on:
@@ -64,4 +63,3 @@ jobs:
             upstream/build/vita/*.suprx
             upstream/build/vita/*.a
           if-no-files-found: error
-```
