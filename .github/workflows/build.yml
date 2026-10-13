@@ -1,42 +1,51 @@
-name: Build PS Vita USB MIDI diagnostic
+name: Build PS Vita USB MIDI core (without SDL scope app)
 
 on:
   workflow_dispatch:
   push:
     branches: [ main ]
 
+permissions:
+  contents: read
+
 jobs:
-  build-diagnostic:
+  build:
     runs-on: ubuntu-latest
     container:
       image: vitasdk/vitasdk:latest
 
     steps:
-      - name: Check out this build wrapper
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Fetch upstream USB Audio + MIDI project
-        run: |
-          git clone --depth 1 https://github.com/intermynd-instruments/psvita-usb-audio-midi.git upstream
+      - name: Fetch upstream source
+        run: git clone --depth 1 https://github.com/intermynd-instruments/psvita-usb-audio-midi.git upstream
 
-      - name: Build Vita artifacts
+      - name: Configure Vita build
         working-directory: upstream
         run: |
-          export VITASDK="${VITASDK:-/opt/vitasdk}"
+          export VITASDK="${VITASDK:-/usr/local/vitasdk}"
           export PATH="$VITASDK/bin:$VITASDK/arm-vita-eabi/bin:$PATH"
-          make vita VITASDK="$VITASDK"
+          cmake -S . -B build/vita \
+            -DCMAKE_TOOLCHAIN_FILE="$VITASDK/share/vita.toolchain.cmake" \
+            -DPSVITA_USB_AUDIO_MIDI_VITA=ON
 
-      - name: List build outputs
+      - name: Build plugin, client bridge, and stubs only
+        working-directory: upstream
         run: |
-          find upstream/build/vita -maxdepth 2 -type f \\
-            \\( -name '*.vpk' -o -name '*.skprx' -o -name '*.suprx' -o -name '*.a' \\) -print
+          export VITASDK="${VITASDK:-/usr/local/vitasdk}"
+          export PATH="$VITASDK/bin:$VITASDK/arm-vita-eabi/bin:$PATH"
+          cmake --build build/vita --target public_stub_aliases --parallel 2
 
-      - name: Upload diagnostic VPK and plugin artifacts
+      - name: Show outputs
+        run: |
+          find upstream/build/vita -maxdepth 2 -type f \
+            \( -name '*.skprx' -o -name '*.suprx' -o -name '*.a' \) -print
+
+      - name: Upload plugin and client artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: vita-usb-midi-diagnostic
+          name: vita-usb-midi-core
           path: |
-            upstream/build/vita/*.vpk
             upstream/build/vita/*.skprx
             upstream/build/vita/*.suprx
             upstream/build/vita/*.a
