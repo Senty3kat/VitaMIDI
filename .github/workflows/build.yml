@@ -33,20 +33,30 @@ jobs:
             -DCMAKE_TOOLCHAIN_FILE="$VITASDK/share/vita.toolchain.cmake" \
             -DPSVITA_USB_AUDIO_MIDI_VITA=ON
 
-      - name: Build kernel plugin, client module, and stubs
+            - name: Build Vita modules and stubs
         working-directory: upstream
+        shell: bash
         run: |
           export VITASDK="${VITASDK:-/usr/local/vitasdk}"
           export PATH="$VITASDK/bin:$VITASDK/arm-vita-eabi/bin:$PATH"
 
+          echo "=== Available CMake targets ==="
+          cmake --build build/vita --target help
+
+          echo "=== Build Vita SELF modules ==="
           cmake --build build/vita \
             --target \
-              psvita_usb_audio_midi_kernel \
-              psvita_usb_audio_midi_client \
-              kernel_stubs \
-              client_stubs \
+              psvita_usb_audio_midi.skprx-self \
+              psvita_usb_audio_midi_client.suprx-self \
               public_stub_aliases \
             --parallel 2
+
+      - name: Find generated modules
+        if: always()
+        run: |
+          find upstream/build/vita -type f \
+            \( -name '*.skprx' -o -name '*.suprx' -o -name '*.a' \) \
+            -print || true
 
       - name: List generated files
         if: always()
