@@ -1,0 +1,43 @@
+name: Build PS Vita USB MIDI diagnostic
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+jobs:
+  build-diagnostic:
+    runs-on: ubuntu-latest
+    container:
+      image: vitasdk/vitasdk:latest
+
+    steps:
+      - name: Check out this build wrapper
+        uses: actions/checkout@v4
+
+      - name: Fetch upstream USB Audio + MIDI project
+        run: |
+          git clone --depth 1 https://github.com/intermynd-instruments/psvita-usb-audio-midi.git upstream
+
+      - name: Build Vita artifacts
+        working-directory: upstream
+        run: |
+          export VITASDK="${VITASDK:-/opt/vitasdk}"
+          export PATH="$VITASDK/bin:$VITASDK/arm-vita-eabi/bin:$PATH"
+          make vita VITASDK="$VITASDK"
+
+      - name: List build outputs
+        run: |
+          find upstream/build/vita -maxdepth 2 -type f \\
+            \\( -name '*.vpk' -o -name '*.skprx' -o -name '*.suprx' -o -name '*.a' \\) -print
+
+      - name: Upload diagnostic VPK and plugin artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: vita-usb-midi-diagnostic
+          path: |
+            upstream/build/vita/*.vpk
+            upstream/build/vita/*.skprx
+            upstream/build/vita/*.suprx
+            upstream/build/vita/*.a
+          if-no-files-found: error
