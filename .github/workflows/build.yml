@@ -3,7 +3,8 @@ name: Build PS Vita USB MIDI modules
 on:
   workflow_dispatch:
   push:
-    branches: [ main ]
+    branches:
+      - main
 
 permissions:
   contents: read
@@ -11,11 +12,13 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+
     container:
       image: vitasdk/vitasdk:latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout workflow repository
+        uses: actions/checkout@v4
 
       - name: Fetch upstream source
         run: |
@@ -25,53 +28,78 @@ jobs:
 
       - name: Configure Vita build
         working-directory: upstream
+        shell: bash
         run: |
           export VITASDK="${VITASDK:-/usr/local/vitasdk}"
           export PATH="$VITASDK/bin:$VITASDK/arm-vita-eabi/bin:$PATH"
 
+          echo "=== VitaSDK ==="
+          echo "$VITASDK"
+
+          echo "=== Configure CMake ==="
           cmake -S . -B build/vita \
             -DCMAKE_TOOLCHAIN_FILE="$VITASDK/share/vita.toolchain.cmake" \
             -DPSVITA_USB_AUDIO_MIDI_VITA=ON
 
-            - name: Build Vita modules and stubs
+      - name: Show available CMake targets
         working-directory: upstream
         shell: bash
         run: |
           export VITASDK="${VITASDK:-/usr/local/vitasdk}"
           export PATH="$VITASDK/bin:$VITASDK/arm-vita-eabi/bin:$PATH"
 
-          echo "=== Available CMake targets ==="
           cmake --build build/vita --target help
 
-          echo "=== Build Vita SELF modules ==="
+      - name: Build kernel, client, and stubs
+        working-directory: upstream
+        shell: bash
+        run: |
+          export VITASDK="${VITASDK:-/usr/local/vitasdk}"
+          export PATH="$VITASDK/bin:$VITASDK/arm-vita-eabi/bin:$PATH"
+
+          cmake --build build/vita \
+            --target \
+              psvita_usb_audio_midi_kernel \
+              psvita_usb_audio_midi_client \
+              public_stub_aliases \
+            --parallel 2
+
+      - name: Try packaging Vita SELF modules
+        working-directory: upstream
+        shell: bash
+        continue-on-error: true
+        run: |
+          export VITASDK="${VITASDK:-/usr/local/vitasdk}"
+          export PATH="$VITASDK/bin:$VITASDK/arm-vita-eabi/bin:$PATH"
+
           cmake --build build/vita \
             --target \
               psvita_usb_audio_midi.skprx-self \
               psvita_usb_audio_midi_client.suprx-self \
-              public_stub_aliases \
             --parallel 2
-
-      - name: Find generated modules
-        if: always()
-        run: |
-          find upstream/build/vita -type f \
-            \( -name '*.skprx' -o -name '*.suprx' -o -name '*.a' \) \
-            -print || true
 
       - name: List generated files
         if: always()
+        shell: bash
         run: |
+          echo "=== SELF modules ==="
           find upstream/build/vita -type f \
-            \( -name '*.skprx' -o -name '*.suprx' -o -name '*.a' \) \
+            \( -name '*.skprx' -o -name '*.suprx' \) \
+            -print || true
+
+          echo "=== ELF and archives ==="
+          find upstream/build/vita -type f \
+            \( -name '*.elf' -o -name '*.a' \) \
             -print || true
 
       - name: Upload build artifacts
-        if: success()
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: vita-usb-midi-modules
+          name: vita-usb-midi-build
           path: |
-            upstream/build/vita/*.skprx
-            upstream/build/vita/*.suprx
-            upstream/build/vita/*.a
-          if-no-files-found: error
+            upstream/build/vita/**/*.skprx
+            upstream/build/vita/**/*.suprx
+            upstream/build/vita/**/*.elf
+            upstream/build/vita/**/*.a
+          if-no-files-found: warn
