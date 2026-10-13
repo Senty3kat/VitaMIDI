@@ -26,6 +26,149 @@ jobs:
             https://github.com/intermynd-instruments/psvita-usb-audio-midi.git \
             upstream
 
+            - name: Patch MIDI Note On and Note Off
+        working-directory: upstream
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path("src/common/midi_core.c")
+          source = path.read_text()
+          marker = "static int realtime_status_supported(uint8_t status)\n"
+
+          prefix, separator, _ = source.partition(marker)
+          if not separator:
+              raise SystemExit("ERROR: MIDI patch location not found")
+
+          replacement = r'''static int realtime_status_supported(uint8_t status)
+          {
+              return status == 0xf8u || status == 0xfau ||
+                     status == 0xfbu || status == 0xfcu;
+          }
+
+          int psvita_usb_midi_event_supported(const PsvitaUsbMidiEvent *event)
+          {
+              uint8_t status;
+              if (!event || event->cable != 0) return 0;
+
+              if (event->size == 1)
+                  return realtime_status_supported(event->data[0]);
+
+              if (event->size != 3) return 0;
+              status = event->data[0];
+
+              if ((status & 0xf0u) != 0x80u &&
+                  (status & 0xf0u) != 0x90u)
+                  return 0;
+
+              return event->data[1] < 128u &&
+                     event->data[2] < 128u;
+          }
+
+          PsvitaUsbMidiParseResult psvita_usb_midi_parse_usb_packets(
+              const uint8_t *bytes, size_t length, uint64_t timestamp_us,
+              PsvitaUsbMidiRing *destination, uint32_t *dropped)
+          {
+              PsvitaUsbMidiParseResult result = {0, 0, 0};
+
+              if (!bytes || !destination) {
+                  result.malformed = 1;
+                  return result;
+              }
+
+              if (length > 0u && length < 4u) {
+                  result.malformed = 1;
+                  for (size_t i = 0; i < length; ++i) {
+                      PsvitaUsbMidiEvent event;
+                      memset(&event, 0, sizeof(event));
+                      event.timestamp_us = timestamp_us;
+                      event.size = 1;
+                      event.data[0] = bytes[i];
+
+                      if (!realtime_status_supported(event.data[0])) {
+                          result.filtered++;
+                          continue;
+                      }
+                      if (!psvita_usb_midi_ring_push(destination, &event)) {
+                          if (dropped) (*dropped)++;
+                          continue;
+                      }
+                      result.accepted++;
+                  }
+                  return result;
+              }
+
+              if ((length & 3u) != 0) result.malformed++;
+
+              for (size_t offset = 0; offset + 3u < length; offset += 4u) {
+                  uint8_t header = bytes[offset];
+                  uint8_t cable = header >> 4;
+                  uint8_t cin = header & 0x0fu;
+                  uint8_t status = bytes[offset + 1u];
+                  PsvitaUsbMidiEvent event;
+                  memset(&event, 0, sizeof(event));
+                  event.timestamp_us = timestamp_us;
+
+                  if ((cin == 0x8u || cin == 0x9u) &&
+                      cable == 0u &&
+                      (status & 0xf0u) == (cin << 4) &&
+                      bytes[offset + 2u] < 128u &&
+                      bytes[offset + 3u] < 128u) {
+                      event.cable = 0;
+                      event.size = 3;
+                      event.data[0] = status;
+                      event.data[1] = bytes[offset + 2u];
+                      event.data[2] = bytes[offset + 3u];
+                  } else if (realtime_status_supported(status)) {
+                      event.cable = 0;
+                      event.size = 1;
+                      event.data[0] = status;
+                  } else {
+                      result.filtered++;
+                      continue;
+                  }
+
+                  if (!psvita_usb_midi_ring_push(destination, &event)) {
+                      if (dropped) (*dropped)++;
+                      continue;
+                  }
+                  result.accepted++;
+              }
+              return result;
+          }
+
+          int psvita_usb_midi_encode_event(const PsvitaUsbMidiEvent *event,
+              uint8_t packet[4])
+          {
+              uint8_t status;
+              uint8_t cin;
+
+              if (!packet || !psvita_usb_midi_event_supported(event))
+                  return 0;
+
+              status = event->data[0];
+
+              if (event->size == 3) {
+                  cin = (status & 0xf0u) >> 4;
+                  packet[0] = (uint8_t)((event->cable << 4) | cin);
+                  packet[1] = event->data[0];
+                  packet[2] = event->data[1];
+                  packet[3] = event->data[2];
+              } else {
+                  packet[0] = 0x0fu;
+                  packet[1] = status;
+                  packet[2] = 0;
+                  packet[3] = 0;
+              }
+              return 1;
+          }
+          '''
+
+          path.write_text(prefix + replacement)
+          print("Patched MIDI Note On/Off support")
+          PY
+
       - name: Configure Vita build
         working-directory: upstream
         shell: bash
