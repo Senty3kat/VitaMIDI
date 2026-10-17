@@ -542,7 +542,8 @@ int module_stop(SceSize argc, const void *args)
 	lock();
 	stop_locked();
 	unlock();
-	if (g_sys_handler >= 0) ksceKernelUnregisterSysEventHandler(g_sys_handler);
+	/* обработчик сна не снимаем: в vitasdk нет ksceKernelUnregisterSysEventHandler;
+	 * плагины из config.txt не выгружаются до перезагрузки */
 	if (g_proc_handler >= 0) ksceKernelUnregisterProcEventHandler(g_proc_handler);
 	if (g_driver_registered) ksceUsbdUnregisterDriver(&g_driver);
 	ksceKernelDeleteEventFlag(g_rx_flag);
