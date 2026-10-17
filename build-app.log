@@ -1,0 +1,42 @@
+[ 15%] Built target vitamidi_kernel
+[ 20%] Converting to Sony ELF vitamidi_kernel.velf
+[ 20%] Built target vitamidi_kernel-velf
+[ 25%] Creating SELF vitamidi.skprx
+[ 25%] Built target vitamidi.skprx-self
+[ 30%] Building stubs vitamidi_stubs
+[ 35%] Built target vitamidi_stubs
+[ 35%] Built target libVitaMidi_stub.a
+[ 35%] Built target libVitaMidi_stub_weak.a
+[ 40%] Building C object CMakeFiles/vitamidi_test.dir/app/main.c.obj
+[ 45%] Linking C executable vitamidi_test
+[ 45%] Built target vitamidi_test
+[ 50%] Converting to Sony ELF vitamidi_test.velf
+[ 50%] Built target vitamidi_test-velf
+[ 55%] Creating SELF vitamidi_test.self
+[ 55%] Built target vitamidi_test.self-self
+[ 60%] Generating param.sfo for vitamidi_test.vpk
+[ 65%] Building vpk vitamidi_test.vpk
+[ 65%] Built target vitamidi_test.vpk-vpk
+[ 70%] Building C object CMakeFiles/vitamidi_controller.dir/controller/main.c.obj
+/__w/VitaMIDI/VitaMIDI/controller/main.c: In function 'main':
+/__w/VitaMIDI/VitaMIDI/controller/main.c:84:55: warning: '%s' directive output may be truncated writing up to 127 bytes into a region of size 56 [-Wformat-truncation=]
+   84 |         snprintf(log_lines[0], sizeof(log_lines[0]), "%s", s);
+      |                                                       ^~
+......
+  486 |                                 log_add(line);
+      |                                         ~~~~           
+In function 'log_add',
+    inlined from 'main' at /__w/VitaMIDI/VitaMIDI/controller/main.c:486:5:
+/__w/VitaMIDI/VitaMIDI/controller/main.c:84:9: note: 'snprintf' output between 1 and 128 bytes into a destination of size 56
+   84 |         snprintf(log_lines[0], sizeof(log_lines[0]), "%s", s);
+      |         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+[ 75%] Building C object CMakeFiles/vitamidi_controller.dir/third_party/psvita-usb-audio-midi/src/client/loader.c.obj
+[ 80%] Linking C executable vitamidi_controller
+[ 80%] Built target vitamidi_controller
+[ 85%] Converting to Sony ELF vitamidi_controller.velf
+[ 85%] Built target vitamidi_controller-velf
+[ 90%] Creating SELF vitamidi_controller.self
+[ 90%] Built target vitamidi_controller.self-self
+[ 95%] Generating param.sfo for vitamidi_controller.vpk
+[100%] Building vpk vitamidi_controller.vpk
+[100%] Built target vitamidi_controller.vpk-vpk

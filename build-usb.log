@@ -1,0 +1,48 @@
+-- The C compiler identification is GNU 15.2.0
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /usr/local/vitasdk/bin/arm-vita-eabi-gcc - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Configuring done (0.2s)
+-- Generating done (0.0s)
+-- Build files have been written to: /__w/VitaMIDI/VitaMIDI/build-usb
+[  7%] Building C object CMakeFiles/psvita_usb_audio_midi_kernel.dir/src/kernel/kernel.c.obj
+[ 15%] Building C object CMakeFiles/psvita_usb_audio_midi_kernel.dir/src/kernel/usb_driver.c.obj
+[ 23%] Building C object CMakeFiles/psvita_usb_audio_midi_kernel.dir/src/common/audio_control.c.obj
+[ 30%] Building C object CMakeFiles/psvita_usb_audio_midi_kernel.dir/src/common/audio_core.c.obj
+[ 38%] Building C object CMakeFiles/psvita_usb_audio_midi_kernel.dir/src/common/midi_core.c.obj
+[ 46%] Building C object CMakeFiles/psvita_usb_audio_midi_kernel.dir/src/common/usb_descriptors.c.obj
+[ 53%] Building C object CMakeFiles/psvita_usb_audio_midi_kernel.dir/src/common/midi_timing.c.obj
+[ 61%] Building C object CMakeFiles/psvita_usb_audio_midi_kernel.dir/src/common/owner_guard.c.obj
+[ 69%] Building C object CMakeFiles/psvita_usb_audio_midi_kernel.dir/src/common/stock_state.c.obj
+[ 76%] Building C object CMakeFiles/psvita_usb_audio_midi_kernel.dir/src/common/takeover.c.obj
+[ 84%] Linking C executable psvita_usb_audio_midi_kernel
+[ 84%] Built target psvita_usb_audio_midi_kernel
+[ 92%] Converting to Sony ELF psvita_usb_audio_midi_kernel.velf
+[ 92%] Built target psvita_usb_audio_midi_kernel-velf
+[100%] Creating SELF psvita_usb_audio_midi.skprx
+[100%] Built target psvita_usb_audio_midi.skprx-self
+[ 64%] Built target psvita_usb_audio_midi_kernel
+[ 70%] Generating imports YAML for psvita_usb_audio_midi_kernel
+[ 76%] Building stubs kernel_stubs
+make[4]: warning: jobserver unavailable: using -j1.  Add '+' to parent make rule.
+[ 76%] Built target kernel_stubs
+[ 82%] Building C object CMakeFiles/psvita_usb_audio_midi_client.dir/src/client/client.c.obj
+[ 88%] Linking C executable psvita_usb_audio_midi_client
+[ 88%] Built target psvita_usb_audio_midi_client
+[ 94%] Converting to Sony ELF psvita_usb_audio_midi_client.velf
+[ 94%] Built target psvita_usb_audio_midi_client-velf
+[100%] Creating SELF psvita_usb_audio_midi_client.suprx
+[100%] Built target psvita_usb_audio_midi_client.suprx-self
+[ 61%] Built target psvita_usb_audio_midi_kernel
+[ 66%] Building stubs kernel_stubs
+make[4]: warning: jobserver unavailable: using -j1.  Add '+' to parent make rule.
+[ 72%] Built target kernel_stubs
+[ 83%] Built target psvita_usb_audio_midi_client
+[ 88%] Generating imports YAML for psvita_usb_audio_midi_client
+[ 94%] Building stubs client_stubs
+make[4]: warning: jobserver unavailable: using -j1.  Add '+' to parent make rule.
+[ 94%] Built target client_stubs
+[100%] Creating public USB audio/MIDI stub archive names
+[100%] Built target public_stub_aliases
