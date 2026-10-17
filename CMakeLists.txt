@@ -67,6 +67,9 @@ target_link_libraries(vitamidi_test
   SceSysmodule_stub
   SceKernelThreadMgr_stub
 )
+# vita_create_self — макрос: флаги от плагина (CONFIG exports.yml) сбрасываем
+set(VITA_ELF_CREATE_FLAGS "")
+set(VITA_MAKE_FSELF_FLAGS "")
 vita_create_self(vitamidi_test.self vitamidi_test)
 vita_create_vpk(vitamidi_test.vpk ${VITA_TITLEID} vitamidi_test.self
   VERSION ${VITA_VERSION}

@@ -155,7 +155,8 @@ static void describe(const VitaMidiEvent *e, char *out, size_t cap)
 			snprintf(out, cap, "NOTE ON   %s%d  vel %3d  ch %d", NOTE_NAMES[n % 12], n / 12 - 1, e->data[2], ch);
 			return;
 		}
-		/* fallthrough: Note On с нулевой силой = Note Off */
+		/* Note On с нулевой силой = Note Off */
+		/* fall through */
 	case 0x80:
 		snprintf(out, cap, "NOTE OFF  %s%d  ch %d", NOTE_NAMES[n % 12], n / 12 - 1, ch);
 		return;
