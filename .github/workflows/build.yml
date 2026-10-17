@@ -6,7 +6,7 @@ on:
     branches: [main]
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   test:
@@ -57,6 +57,16 @@ jobs:
           cp build/vitamidi_test.vpk out/ 2>/dev/null || true
           cp README.md out/ 2>/dev/null || true
           ls -la out
+
+      - name: Publish build logs to ci-logs branch
+        if: always()
+        shell: bash
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          mkdir -p /tmp/logs && cp build-*.log /tmp/logs/ 2>/dev/null || echo "no logs" > /tmp/logs/none.txt
+          cd /tmp/logs && git init -q && git checkout -q -b ci-logs
+          git -c user.name=ci -c user.email=ci@local add -A && git -c user.name=ci -c user.email=ci@local commit -q -m "logs for ${GITHUB_SHA}"
+          git push -q -f "https://x-access-token:${{ github.token }}@github.com/${GITHUB_REPOSITORY}.git" ci-logs
 
       - uses: actions/upload-artifact@v4
         if: always()
