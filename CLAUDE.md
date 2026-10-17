@@ -44,7 +44,7 @@ MIDI для PS Vita в обе стороны:
 
 ## Открыто
 
-- 2026-10-18: **Vita → Ableton работает на железе** (Win10, драйвер usbaudio/wdma_usb, порт «PS Vita USB»).
+- 2026-10-18: **Vita → Ableton и Ableton → Vita работают на железе** (Win10, драйвер usbaudio/wdma_usb, порт «PS Vita USB»).
   Помеха была одна: `udcd_uvc_oled_off.skprx` в config.txt (ошибка CONFLICT 0x805D0006) — закомментирован.
 - Дальше: проверка клавиатуры → Vita (vitamidi.skprx + VitaMIDI Test) на железе. Отчёты:
   `ux0:data/vitamidi/controller_report.txt`, `ux0:data/vitamidi/report.txt`.
