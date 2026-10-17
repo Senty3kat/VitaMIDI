@@ -1,0 +1,12 @@
+[ 20%] Building C object CMakeFiles/vitamidi_kernel.dir/kernel/main.c.obj
+[ 40%] Building C object CMakeFiles/vitamidi_kernel.dir/common/umidi.c.obj
+[ 60%] Linking C executable vitamidi_kernel
+[ 60%] Built target vitamidi_kernel
+[ 80%] Converting to Sony ELF vitamidi_kernel.velf
+[ 80%] Built target vitamidi_kernel-velf
+[100%] Creating SELF vitamidi.skprx
+[100%] Built target vitamidi.skprx-self
+[ 60%] Built target vitamidi_kernel
+[ 80%] Generating imports YAML for vitamidi_kernel
+[100%] Building stubs vitamidi_stubs
+[100%] Built target vitamidi_stubs

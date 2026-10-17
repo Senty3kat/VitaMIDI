@@ -1,0 +1,19 @@
+[ 23%] Built target vitamidi_kernel
+[ 30%] Converting to Sony ELF vitamidi_kernel.velf
+[ 30%] Built target vitamidi_kernel-velf
+[ 38%] Creating SELF vitamidi.skprx
+[ 38%] Built target vitamidi.skprx-self
+[ 46%] Building stubs vitamidi_stubs
+[ 53%] Built target vitamidi_stubs
+[ 53%] Built target libVitaMidi_stub.a
+[ 53%] Built target libVitaMidi_stub_weak.a
+[ 61%] Building C object CMakeFiles/vitamidi_test.dir/app/main.c.obj
+[ 69%] Linking C executable vitamidi_test
+[ 69%] Built target vitamidi_test
+[ 76%] Converting to Sony ELF vitamidi_test.velf
+[ 76%] Built target vitamidi_test-velf
+[ 84%] Creating SELF vitamidi_test.self
+[ 84%] Built target vitamidi_test.self-self
+[ 92%] Generating param.sfo for vitamidi_test.vpk
+[100%] Building vpk vitamidi_test.vpk
+[100%] Built target vitamidi_test.vpk-vpk
