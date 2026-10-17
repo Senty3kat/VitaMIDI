@@ -69,8 +69,10 @@ jobs:
         run: |
           mkdir -p out
           cp build/vitamidi.skprx out/ 2>/dev/null || true
-          cp build/vitamidi_test.vpk out/ 2>/dev/null || true
-          cp build/vitamidi_controller.vpk out/ 2>/dev/null || true
+          VT=$(sed -n 's/^#define APP_VERSION "\(.*\)"/\1/p' app/main.c)
+          VC=$(sed -n 's/^#define APP_VERSION "\(.*\)"/\1/p' controller/main.c)
+          cp build/vitamidi_test.vpk "out/VitaMIDI-Test-v${VT}.vpk" 2>/dev/null || true
+          cp build/vitamidi_controller.vpk "out/VitaMIDI-Controller-v${VC}.vpk" 2>/dev/null || true
           cp build-usb/psvita_usb_audio_midi.skprx out/ 2>/dev/null || true
           cp README.md out/ 2>/dev/null || true
           ls -la out
@@ -81,6 +83,7 @@ jobs:
         run: |
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           mkdir -p /tmp/logs && cp build-*.log /tmp/logs/ 2>/dev/null || echo "no logs" > /tmp/logs/none.txt
+          mkdir -p /tmp/logs/out && cp out/* /tmp/logs/out/ 2>/dev/null || true
           cd /tmp/logs && git init -q && git checkout -q -b ci-logs
           git -c user.name=ci -c user.email=ci@local add -A && git -c user.name=ci -c user.email=ci@local commit -q -m "logs for ${GITHUB_SHA}"
           git push -q -f "https://x-access-token:${{ github.token }}@github.com/${GITHUB_REPOSITORY}.git" ci-logs
