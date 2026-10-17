@@ -36,7 +36,7 @@ jobs:
           export VITASDK="${VITASDK:-/usr/local/vitasdk}"
           export PATH="$VITASDK/bin:$PATH"
           set -o pipefail
-          cmake --build build --target vitamidi.skprx vitamidi_stubs 2>&1 | tee build-plugin.log || { { grep -iE "error|undefined" build-plugin.log | head -15; tail -12 build-plugin.log; } | sed 's/^/::error::/'; exit 1; }
+          cmake --build build --target vitamidi.skprx-self vitamidi_stubs 2>&1 | tee build-plugin.log || { { grep -iE "error|undefined" build-plugin.log | head -15; tail -12 build-plugin.log; } | sed 's/^/::error::/'; exit 1; }
           echo "=== stub libraries ==="
           find build -name '*.a' -print
 
