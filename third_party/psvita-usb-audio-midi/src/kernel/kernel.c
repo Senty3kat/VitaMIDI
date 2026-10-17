@@ -261,7 +261,12 @@ static void process_rx(void)
 
 static void process_tx(void)
 {
-	uint8_t bytes[4];
+	/* VitaMIDI: до 15 пакетов USB-MIDI за одну передачу. 60 байт < 64 (размер
+	 * пакета full-speed), поэтому передача всегда «короткая» и хост не ждёт
+	 * пакета нулевой длины. */
+	uint8_t bytes[60];
+	uint32_t length = 0;
+	int head_included = 0;
 	lock_state();
 	if (!scheduled_tx_valid) {
 		if (psvita_usb_midi_ring_pop(&tx_ring, &scheduled_tx_event, 1u) == 1u)
@@ -277,26 +282,35 @@ static void process_tx(void)
 		unlock_state();
 		return;
 	}
-	if (!psvita_usb_midi_encode_event(&scheduled_tx_event, bytes)) {
+	if (psvita_usb_midi_encode_event(&scheduled_tx_event, bytes)) {
+		length = 4u;
+		head_included = 1;
+	} else {
 		status.filtered++;
 		diagnostics.tx_filtered_events++;
 		scheduled_tx_valid = 0;
+	}
+	length += psvita_usb_midi_encode_due(&tx_ring, now_us, bytes + length,
+		sizeof(bytes) - length);
+	if (!length) {
 		unlock_state();
 		return;
 	}
 	uint64_t error_us = scheduled_tx_event.timestamp_us && now_us > scheduled_tx_event.timestamp_us
 		? now_us - scheduled_tx_event.timestamp_us : 0;
 	if (error_us > 0xffffffffu) error_us = 0xffffffffu;
-	int result = midi_usb_submit_tx(bytes, sizeof(bytes));
+	int result = midi_usb_submit_tx(bytes, length);
 	if (result >= 0) {
-		diagnostics.tx_scheduled++;
+		diagnostics.tx_scheduled += length / 4u;
 		diagnostics.tx_jitter_histogram[
 			psvita_usb_midi_latency_bucket((uint32_t)error_us)]++;
 		scheduled_tx_valid = 0;
 	} else {
+		uint32_t extra = length / 4u - (head_included ? 1u : 0u);
 		status.last_error = result;
-		if (result != PSVITA_USB_AUDIO_MIDI_ERROR_BUSY) {
-			status.tx_dropped++;
+		status.tx_dropped += extra; /* добавленные в пачку пакеты не повторяем */
+		if (result != PSVITA_USB_AUDIO_MIDI_ERROR_BUSY || !head_included) {
+			if (head_included) status.tx_dropped++;
 			scheduled_tx_valid = 0;
 		}
 	}

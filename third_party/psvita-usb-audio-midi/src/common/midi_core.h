@@ -34,5 +34,9 @@ PsvitaUsbMidiParseResult psvita_usb_midi_parse_usb_packets(
 	PsvitaUsbMidiRing *destination, uint32_t *dropped);
 int psvita_usb_midi_encode_event(const PsvitaUsbMidiEvent *event,
 	uint8_t packet[4]);
+/* VitaMIDI: упаковать все наступившие события очереди в один буфер.
+ * Неподдерживаемые события отбрасываются. Возвращает длину в байтах. */
+uint32_t psvita_usb_midi_encode_due(PsvitaUsbMidiRing *ring, uint64_t now_us,
+	uint8_t *bytes, uint32_t capacity);
 
 #endif

@@ -51,10 +51,28 @@ static int realtime_status_supported(uint8_t status)
 	       status == 0xfbu || status == 0xfcu;
 }
 
+/* VitaMIDI: длина канального сообщения по статусу (0 — не канальное). */
+static uint32_t channel_message_size(uint8_t status)
+{
+	switch (status & 0xf0u) {
+	case 0x80u: case 0x90u: case 0xa0u: case 0xb0u: case 0xe0u: return 3u;
+	case 0xc0u: case 0xd0u: return 2u;
+	default: return 0u;
+	}
+}
+
 int psvita_usb_midi_event_supported(const PsvitaUsbMidiEvent *event)
 {
-	if (!event || event->cable != 0 || event->size != 1) return 0;
-	return realtime_status_supported(event->data[0]);
+	uint32_t expected;
+	if (!event || event->cable != 0) return 0;
+	if (event->size == 1u)
+		return realtime_status_supported(event->data[0]);
+	/* VitaMIDI: канальные сообщения (ноты, CC, pitch bend, program, pressure). */
+	expected = channel_message_size(event->data[0]);
+	if (!expected || event->size != expected) return 0;
+	if (event->data[1] >= 0x80u) return 0;
+	if (expected == 3u && event->data[2] >= 0x80u) return 0;
+	return 1;
 }
 
 PsvitaUsbMidiParseResult psvita_usb_midi_parse_usb_packets(
@@ -112,11 +130,19 @@ PsvitaUsbMidiParseResult psvita_usb_midi_parse_usb_packets(
 		event.size = 1;
 		event.data[0] = bytes[offset + 1u];
 		if (!realtime_status_supported(event.data[0])) {
-			result.filtered++;
-			continue;
+			/* VitaMIDI: канальные сообщения на кабеле 0, CIN совпадает со статусом. */
+			uint8_t status = bytes[offset + 1u];
+			uint32_t size = channel_message_size(status);
+			if (!size || cable != 0u || cin != (status >> 4) ||
+			    bytes[offset + 2u] >= 0x80u ||
+			    (size == 3u && bytes[offset + 3u] >= 0x80u)) {
+				result.filtered++;
+				continue;
+			}
+			event.size = (uint8_t)size;
+			event.data[1] = bytes[offset + 2u];
+			event.data[2] = size == 3u ? bytes[offset + 3u] : 0u;
 		}
-		(void)cable;
-		(void)cin;
 		if (!psvita_usb_midi_ring_push(destination, &event)) {
 			if (dropped) (*dropped)++;
 			continue;
@@ -130,9 +156,34 @@ int psvita_usb_midi_encode_event(const PsvitaUsbMidiEvent *event,
 	uint8_t packet[4])
 {
 	if (!packet || !psvita_usb_midi_event_supported(event)) return 0;
-	packet[0] = 0x0fu;
-	packet[1] = event->data[0];
-	packet[2] = 0;
-	packet[3] = 0;
+	if (event->size == 1u) {
+		packet[0] = 0x0fu;
+		packet[1] = event->data[0];
+		packet[2] = 0;
+		packet[3] = 0;
+	} else {
+		/* VitaMIDI: CIN = старшая тетрада статуса, кабель 0. */
+		packet[0] = (uint8_t)(event->data[0] >> 4);
+		packet[1] = event->data[0];
+		packet[2] = event->data[1];
+		packet[3] = event->size == 3u ? event->data[2] : 0u;
+	}
 	return 1;
+}
+
+uint32_t psvita_usb_midi_encode_due(PsvitaUsbMidiRing *ring, uint64_t now_us,
+	uint8_t *bytes, uint32_t capacity)
+{
+	uint32_t length = 0;
+	if (!ring || !bytes) return 0;
+	/* VitaMIDI: забираем из очереди все события, срок которых наступил, и
+	 * пакуем в одну передачу — аккорд уходит одним пакетом, без растяжки. */
+	while (ring->count && length + 4u <= capacity) {
+		const PsvitaUsbMidiEvent *next = &ring->events[ring->read_index];
+		if (next->timestamp_us && next->timestamp_us > now_us) break;
+		if (psvita_usb_midi_encode_event(next, bytes + length)) length += 4u;
+		ring->read_index = (ring->read_index + 1u) % PSVITA_USB_MIDI_RING_CAPACITY;
+		ring->count--;
+	}
+	return length;
 }

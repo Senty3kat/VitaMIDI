@@ -847,12 +847,15 @@ static int test_parser_and_filtering(void)
 	psvita_usb_midi_ring_init(&ring);
 	PsvitaUsbMidiParseResult parsed = psvita_usb_midi_parse_usb_packets(
 		packets, sizeof(packets), 123456u, &ring, &dropped);
-	CHECK(parsed.accepted == 7u);
-	CHECK(parsed.filtered == 2u);
+	/* VitaMIDI: Note On теперь принимается, Song Position (0xF2) — нет. */
+	CHECK(parsed.accepted == 8u);
+	CHECK(parsed.filtered == 1u);
 	CHECK(parsed.malformed == 0u);
 	CHECK(dropped == 0u);
-	PsvitaUsbMidiEvent events[7];
-	CHECK(psvita_usb_midi_ring_pop(&ring, events, 7) == 7u);
+	PsvitaUsbMidiEvent events[8];
+	CHECK(psvita_usb_midi_ring_pop(&ring, events, 8) == 8u);
+	CHECK(events[7].size == 3u && events[7].data[0] == 0x90u &&
+	      events[7].data[1] == 60u && events[7].data[2] == 100u);
 	CHECK(events[0].timestamp_us == 123456u);
 	CHECK(events[0].data[0] == 0xf8u);
 	CHECK(events[2].data[0] == 0xfbu);
@@ -947,7 +950,7 @@ static int test_encode_and_bounds(void)
 	event.data[0] = 0xfa;
 	CHECK(psvita_usb_midi_encode_event(&event, packet));
 	CHECK(packet[0] == 0x0f && packet[1] == 0xfa && packet[2] == 0);
-	event.data[0] = 0x90;
+	event.data[0] = 0x90; /* размер 1 у Note On — неверно */
 	CHECK(!psvita_usb_midi_encode_event(&event, packet));
 	event.data[0] = 0xf8;
 	event.cable = 1;
@@ -956,6 +959,90 @@ static int test_encode_and_bounds(void)
 	CHECK(sizeof(PsvitaUsbAudioMidiStatus) == 32u);
 	CHECK(sizeof(PsvitaUsbAudioMidiTraceEntry) == 8u);
 	CHECK(sizeof(PsvitaUsbAudioMidiDiagnostics) == 420u);
+	return 0;
+}
+
+/* VitaMIDI: канальные сообщения в обе стороны и пачки. */
+static int test_vitamidi_channel_messages(void)
+{
+	const uint8_t packets[] = {
+		0x08, 0x83, 64, 0,      /* Note Off ch4 */
+		0x0b, 0xb0, 1, 127,     /* CC1 */
+		0x0e, 0xe0, 0x00, 0x40, /* Pitch Bend центр */
+		0x0c, 0xc2, 5, 0,       /* Program Change */
+		0x0d, 0xd0, 77, 0,      /* Channel Pressure */
+		0x0a, 0xa0, 60, 30,     /* Poly AT */
+		0x19, 0x90, 60, 100,    /* кабель 1 — отбросить */
+		0x0b, 0x90, 60, 100,    /* CIN не совпадает со статусом */
+		0x09, 0x90, 0x80, 100,  /* байт данных >= 0x80 */
+		0x04, 0xf0, 0x7e, 0x7f, /* SysEx — отбросить */
+		0x09, 0x90, 60, 0       /* Note On с нулевой силой */
+	};
+	PsvitaUsbMidiRing ring;
+	PsvitaUsbMidiEvent ev[8];
+	uint32_t dropped = 0;
+	uint8_t packet[4];
+	psvita_usb_midi_ring_init(&ring);
+	PsvitaUsbMidiParseResult r = psvita_usb_midi_parse_usb_packets(
+		packets, sizeof(packets), 1u, &ring, &dropped);
+	CHECK(r.accepted == 7u);
+	CHECK(r.filtered == 4u);
+	CHECK(psvita_usb_midi_ring_pop(&ring, ev, 8) == 7u);
+	CHECK(ev[0].size == 3u && ev[0].data[0] == 0x83u && ev[0].data[1] == 64u);
+	CHECK(ev[2].data[0] == 0xe0u && ev[2].data[2] == 0x40u);
+	CHECK(ev[3].size == 2u && ev[3].data[1] == 5u && ev[3].data[2] == 0u);
+	CHECK(ev[4].size == 2u && ev[4].data[0] == 0xd0u);
+	CHECK(ev[6].data[2] == 0u);
+
+	/* Кодирование обратно. */
+	CHECK(psvita_usb_midi_encode_event(&ev[0], packet));
+	CHECK(packet[0] == 0x08u && packet[1] == 0x83u && packet[2] == 64u && packet[3] == 0u);
+	CHECK(psvita_usb_midi_encode_event(&ev[3], packet));
+	CHECK(packet[0] == 0x0cu && packet[1] == 0xc2u && packet[2] == 5u && packet[3] == 0u);
+	ev[0].size = 2u; /* Note Off не бывает двухбайтовым */
+	CHECK(!psvita_usb_midi_encode_event(&ev[0], packet));
+	ev[1].data[2] = 0x80u;
+	CHECK(!psvita_usb_midi_encode_event(&ev[1], packet));
+	return 0;
+}
+
+static int test_vitamidi_encode_due_batches(void)
+{
+	PsvitaUsbMidiRing ring;
+	PsvitaUsbMidiEvent e;
+	uint8_t bytes[60];
+	psvita_usb_midi_ring_init(&ring);
+	memset(&e, 0, sizeof(e));
+	e.size = 3u;
+	e.data[0] = 0x90u;
+	e.data[2] = 100u;
+	/* Аккорд из трёх нот «сейчас», одна нота в будущем. */
+	for (uint32_t i = 0; i < 3u; ++i) {
+		e.data[1] = (uint8_t)(60u + i * 4u);
+		CHECK(psvita_usb_midi_tx_ring_push(&ring, &e));
+	}
+	e.data[1] = 72u;
+	e.timestamp_us = 5000u;
+	CHECK(psvita_usb_midi_tx_ring_push(&ring, &e));
+	CHECK(psvita_usb_midi_encode_due(&ring, 1000u, bytes, sizeof(bytes)) == 12u);
+	CHECK(bytes[0] == 0x09u && bytes[2] == 60u && bytes[6] == 64u && bytes[10] == 68u);
+	CHECK(ring.count == 1u);
+	CHECK(psvita_usb_midi_encode_due(&ring, 4999u, bytes, sizeof(bytes)) == 0u);
+	CHECK(psvita_usb_midi_encode_due(&ring, 5000u, bytes, sizeof(bytes)) == 4u);
+	CHECK(bytes[2] == 72u && ring.count == 0u);
+
+	/* Больше 15 событий — остаток ждёт следующей передачи; мусор выбрасывается. */
+	e.timestamp_us = 0;
+	for (uint32_t i = 0; i < 20u; ++i) {
+		e.data[1] = (uint8_t)i;
+		CHECK(psvita_usb_midi_tx_ring_push(&ring, &e));
+	}
+	CHECK(psvita_usb_midi_encode_due(&ring, 1u, bytes, sizeof(bytes)) == 60u);
+	CHECK(ring.count == 5u);
+	e.size = 1u; /* Note On размером 1 — не поддерживается */
+	CHECK(psvita_usb_midi_tx_ring_push(&ring, &e));
+	CHECK(psvita_usb_midi_encode_due(&ring, 1u, bytes, sizeof(bytes)) == 20u);
+	CHECK(ring.count == 0u);
 	return 0;
 }
 
@@ -1306,6 +1393,8 @@ int main(void)
 	if (test_ring_wrap_and_overflow()) return 1;
 	if (test_transport_supersedes_scheduled_tx_clocks()) return 1;
 	if (test_encode_and_bounds()) return 1;
+	if (test_vitamidi_channel_messages()) return 1;
+	if (test_vitamidi_encode_due_batches()) return 1;
 	if (test_timestamp_deadlines_and_latency_histogram()) return 1;
 	if (test_dead_owner_watchdog()) return 1;
 	if (test_connected_registered_mtp_stock_state()) return 1;
