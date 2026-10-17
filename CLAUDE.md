@@ -20,8 +20,12 @@ USB-MIDI хост для PS Vita: kernel-плагин `vitamidi.skprx` + тес�
 
 ## Как работаем
 
-- Сборка — GitHub Actions (`vitasdk/vitasdk:latest`). Из сессии видно `gh run list -R Senty3kat/vitamidi`
-  и `gh run view --log-failed`. Локально vitasdk/docker нет.
+- Сборка — GitHub Actions (`vitasdk/vitasdk:latest`). Из сессии видно `gh run list -R Senty3kat/vitamidi`,
+  но логи Actions отдают 403. Поэтому workflow кладёт `build-plugin.log` / `build-app.log` в ветку `ci-logs`:
+  `git fetch -f origin ci-logs:refs/remotes/origin/ci-logs && git show origin/ci-logs:build-app.log`.
+  Локально vitasdk/docker нет.
+- Грабли сборки: цель плагина — `vitamidi.skprx-self`; `vita_create_self` — макрос, перед self приложения
+  сбрасывать `VITA_ELF_CREATE_FLAGS`; в образе vitasdk нет `ksceKernelUnregisterSysEventHandler`.
 - Проверка без vitasdk: плагин — `clang --target=armv7a-none-eabi -mthumb -ffreestanding -fsyntax-only
   -I<vita-headers>/include -Iinclude -Icommon kernel/main.c common/umidi.c`; приложение — gcc с заглушкой
   `vita2d.h`. vita-headers клонировать с github.com/vitasdk/vita-headers.
