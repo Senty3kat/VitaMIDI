@@ -29,6 +29,9 @@ MIDI для PS Vita в обе стороны:
 - Сборка — GitHub Actions (`vitasdk/vitasdk:latest`). Из сессии видно `gh run list -R Senty3kat/vitamidi`,
   но логи Actions отдают 403. Поэтому workflow кладёт `build-plugin.log` / `build-app.log` в ветку `ci-logs`:
   `git fetch -f origin ci-logs:refs/remotes/origin/ci-logs && git show origin/ci-logs:build-app.log`.
+  Готовые файлы тоже там: `out/` в ветке `ci-logs` (`git show origin/ci-logs:out/<файл> > файл`) — артефакты
+  Actions из сессии не скачиваются. VPK называются с версией (`VitaMIDI-Controller-v0.1.vpk`), версия — `APP_VERSION`.
+  Готовый VPK сразу отправлять автору в чат.
   Локально vitasdk/docker нет.
 - Грабли сборки: цель плагина — `vitamidi.skprx-self`; `vita_create_self` — макрос, перед self приложения
   сбрасывать `VITA_ELF_CREATE_FLAGS`; в образе vitasdk нет `ksceKernelUnregisterSysEventHandler`.
