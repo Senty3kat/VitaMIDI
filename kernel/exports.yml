@@ -1,0 +1,17 @@
+VitaMidi:
+  attributes: 0
+  version:
+    major: 1
+    minor: 0
+  main:
+    start: module_start
+    stop: module_stop
+  libraries:
+    VitaMidi:
+      syscall: true
+      functions:
+        - vitamidiGetVersion: 0x7A3C0001
+        - vitamidiStart: 0x7A3C0002
+        - vitamidiStop: 0x7A3C0003
+        - vitamidiGetStatus: 0x7A3C0004
+        - vitamidiRead: 0x7A3C0005

@@ -1,0 +1,60 @@
+name: Build VitaMIDI
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Host tests (USB-MIDI parser)
+        run: make -C tests
+
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: vitasdk/vitasdk:latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure
+        run: |
+          export VITASDK="${VITASDK:-/usr/local/vitasdk}"
+          export PATH="$VITASDK/bin:$PATH"
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build plugin and stubs
+        run: |
+          export VITASDK="${VITASDK:-/usr/local/vitasdk}"
+          export PATH="$VITASDK/bin:$PATH"
+          cmake --build build --target vitamidi.skprx vitamidi_stubs -- -j2
+          echo "=== stub libraries ==="
+          find build -name '*.a' -print
+
+      - name: Build test app
+        run: |
+          export VITASDK="${VITASDK:-/usr/local/vitasdk}"
+          export PATH="$VITASDK/bin:$PATH"
+          cmake --build build -- -j2
+
+      - name: Collect
+        if: always()
+        run: |
+          mkdir -p out
+          cp build/vitamidi.skprx out/ 2>/dev/null || true
+          cp build/vitamidi_test.vpk out/ 2>/dev/null || true
+          cp README.md out/ 2>/dev/null || true
+          ls -la out
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: vitamidi
+          path: out/
+          if-no-files-found: warn
