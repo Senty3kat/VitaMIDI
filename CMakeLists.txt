@@ -75,3 +75,50 @@ vita_create_vpk(vitamidi_test.vpk ${VITA_TITLEID} vitamidi_test.self
   VERSION ${VITA_VERSION}
   NAME ${VITA_APP_NAME}
 )
+
+# ---------- контроллер: Vita как USB-MIDI для Ableton ----------
+# Плагин psvita-usb-audio-midi собирается отдельно (см. workflow) в build-usb.
+set(USBMIDI_DIR ${CMAKE_SOURCE_DIR}/third_party/psvita-usb-audio-midi)
+set(USBMIDI_BUILD ${CMAKE_SOURCE_DIR}/build-usb CACHE PATH "сборка psvita-usb-audio-midi")
+if(EXISTS ${USBMIDI_BUILD}/psvita_usb_audio_midi_client.suprx)
+  add_executable(vitamidi_controller
+    controller/main.c
+    ${USBMIDI_DIR}/src/client/loader.c
+  )
+  target_include_directories(vitamidi_controller PRIVATE ${USBMIDI_DIR}/include)
+  target_compile_options(vitamidi_controller PRIVATE -std=gnu99 -O2 -Wall -Wextra -Wno-unused-parameter)
+  target_link_directories(vitamidi_controller PRIVATE ${USBMIDI_BUILD})
+  target_link_libraries(vitamidi_controller
+    psvita_usb_audio_midi_client_stub_weak
+    vita2d
+    png
+    jpeg
+    z
+    m
+    c
+    SceAudio_stub
+    SceAppMgr_stub
+    SceAppUtil_stub
+    SceCommonDialog_stub
+    SceCtrl_stub
+    SceDisplay_stub
+    SceGxm_stub
+    SceLibKernel_stub
+    SceKernelModulemgr_stub
+    ScePgf_stub
+    ScePower_stub
+    SceSysmodule_stub
+    SceTouch_stub
+    SceKernelThreadMgr_stub
+  )
+  set(VITA_ELF_CREATE_FLAGS "")
+  set(VITA_MAKE_FSELF_FLAGS "")
+  vita_create_self(vitamidi_controller.self vitamidi_controller)
+  vita_create_vpk(vitamidi_controller.vpk VMID00002 vitamidi_controller.self
+    VERSION 00.10
+    NAME "VitaMIDI Controller"
+    FILE ${USBMIDI_BUILD}/psvita_usb_audio_midi_client.suprx psvita_usb_audio_midi_client.suprx
+  )
+else()
+  message(STATUS "build-usb не найден: контроллер не собирается")
+endif()
