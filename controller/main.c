@@ -275,7 +275,7 @@ static void draw_keys(void)
 		int note = base_note() + 12 * (w / 7) + WHITE_PC[w % 7];
 		vita2d_draw_rectangle(w * KEY_W + 1, KEYS_Y, KEY_W - 2, KEYS_H, key_color(note, C_WHITE));
 		if (WHITE_PC[w % 7] == 0) {
-			char s[8];
+			char s[12];
 			snprintf(s, sizeof(s), "C%d", note / 12 - 1);
 			vita2d_pgf_draw_text(font, w * KEY_W + 8, KEYS_Y + KEYS_H - 12, C_DIM, 1.0f, s);
 		}

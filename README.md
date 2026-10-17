@@ -1,13 +1,63 @@
 # VitaMIDI
 
-USB-MIDI клавиатура прямо в PS Vita: kernel-плагин `vitamidi.skprx` превращает
-Vita в USB-хост и читает ноты с class-compliant MIDI-устройств (без драйверов,
-например M-VAVE SMK-25). Плюс тестовое приложение `VitaMIDI Test`.
+MIDI для PS Vita в обе стороны:
+
+- **Vita → компьютер:** Vita как USB-MIDI клавиатура для Ableton и других DAW (приложение **VitaMIDI Controller**).
+- **MIDI-клавиатура → Vita:** kernel-плагин `vitamidi.skprx` делает Vita USB-хостом для
+  class-compliant MIDI-клавиатур, например M-VAVE SMK-25 (приложение **VitaMIDI Test**).
 
 > Экспериментальный kernel-код. Ставь на свой риск. Если Vita не загружается —
 > держи **L** при включении (плагины не грузятся), убери строку из `config.txt`.
 
-## Что нужно
+## Режим 1: Vita → Ableton (Vita как MIDI-клавиатура)
+
+Vita подключается к компьютеру обычным USB-кабелем и видна как MIDI-устройство
+**PS Vita USB** — без драйверов, на Windows, macOS и Linux. Плагин —
+`psvita_usb_audio_midi.skprx` из [DS-8](https://github.com/intermynd-instruments/psvita-usb-audio-midi),
+расширенный в VitaMIDI: в оригинале он передаёт только клок, здесь — ноты, CC,
+pitch bend и остальные канальные сообщения в обе стороны
+(подробности — `third_party/psvita-usb-audio-midi/VITAMIDI_CHANGES.md`). DS-8 с ним тоже работает.
+
+### Установка
+
+1. Скачай артефакт `vitamidi` из последней сборки (вкладка **Actions**).
+2. `psvita_usb_audio_midi.skprx` положи в `ur0:tai/` и добавь под `*KERNEL` в `ur0:tai/config.txt`:
+   ```
+   ur0:tai/psvita_usb_audio_midi.skprx
+   ```
+   Если раньше стоял оригинальный плагин DS-8 с тем же именем — просто замени файл.
+3. Перезагрузи Vita, установи `vitamidi_controller.vpk`.
+4. В VitaShell выключи USB-режим. Плагины `vitastick` и `udcd_uvc` должны быть выключены.
+
+### Ableton
+
+1. Запусти **VitaMIDI Controller**, подключи кабель. Наверху должно загореться
+   `CONNECTED to computer`.
+2. Ableton → **Preferences → Link, Tempo & MIDI**. В списке портов у **PS Vita USB**:
+   - вход (**In**): включи **Track** (и **Remote**, если хочешь назначать ручки через MIDI Map);
+   - выход (**Out**): включи **Track**, если хочешь, чтобы ноты из Ableton светились на Vita.
+3. Создай MIDI-дорожку с инструментом, включи мониторинг или запись — играй на экране Vita.
+
+### Управление контроллером
+
+| Что | Действие |
+| --- | --- |
+| Сенсорный экран | клавиши, до 6 пальцев; сила — по высоте нажатия (ниже — громче); палец можно вести по клавишам |
+| L / R | октава вниз / вверх |
+| Левый стик ←→ | pitch bend |
+| Правый стик ↑ | модуляция (CC1) |
+| Задняя панель | CC74 (влево-вправо), CC71 (вверх-вниз) — удобно назначить на фильтр |
+| Треугольник | sustain (CC64), пока держишь |
+| SELECT | MIDI-канал 1–16 |
+| Круг | звук на самой Vita вкл/выкл |
+| X | переподключить USB |
+| Квадрат | отчёт в `ux0:data/vitamidi/controller_report.txt` |
+
+Оранжевые клавиши — сыгранные на Vita, голубые — пришедшие из Ableton.
+
+## Режим 2: MIDI-клавиатура → Vita (USB-хост)
+
+### Что нужно
 
 - Vita 1000 (мультиконнектор) с HENkaku/Ensō и taiHEN. PS TV тоже должен работать
   (у него USB-порты хостовые), Vita 2000 пока не проверялась.
@@ -28,7 +78,7 @@ Vita в USB-хост и читает ноты с class-compliant MIDI-устро
                  - земля зарядки
 ```
 
-## Установка
+### Установка
 
 1. Скачай артефакт `vitamidi` из последней сборки GitHub Actions
    (вкладка **Actions** → верхний зелёный запуск → **Artifacts**).
@@ -43,7 +93,7 @@ Vita в USB-хост и читает ноты с class-compliant MIDI-устро
 Плагин ничего не делает, пока его не попросит приложение: обычный USB
 (VitaShell USB, Content Manager) работает как раньше.
 
-## Проверка
+### Проверка
 
 Запусти **VitaMIDI Test**. На экране 5 шагов — зелёный квадрат значит «есть»:
 

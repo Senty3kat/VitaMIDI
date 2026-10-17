@@ -1,6 +1,10 @@
 # VitaMIDI — заметки для Claude
 
-USB-MIDI хост для PS Vita: kernel-плагин `vitamidi.skprx` + тестовое приложение `VitaMIDI Test` (VMID00001).
+MIDI для PS Vita в обе стороны:
+- **Vita → DAW (Ableton):** `third_party/psvita-usb-audio-midi` — плагин DS-8 v0.2 (MIT) с нашими правками
+  (полный канальный MIDI, пачки при отправке; список в `VITAMIDI_CHANGES.md`, правки помечены `VitaMIDI`),
+  приложение `controller/` — **VitaMIDI Controller** (VMID00002). API плагина не менять: совместимость с DS-8.
+- **Клавиатура → Vita:** USB-хост `vitamidi.skprx` + тестовое приложение `VitaMIDI Test` (VMID00001).
 Автор — Senty3kat (общение на русском, не программист). У автора **Vita 1000 (fat)** и клавиатура
 **M-VAVE SMK-25** (своё питание, USB). Питание VBUS автор делает сам (Y-кабель или внутри клавиатуры).
 Комментарии в коде — по-русски.
@@ -20,6 +24,8 @@ USB-MIDI хост для PS Vita: kernel-плагин `vitamidi.skprx` + тес�
 
 ## Как работаем
 
+- В CI сначала собирается `build-usb` (плагин DS-8), затем корневой CMake (контроллер собирается, только если
+  есть `build-usb/psvita_usb_audio_midi_client.suprx`). Тесты плагина: `make -C third_party/psvita-usb-audio-midi test`.
 - Сборка — GitHub Actions (`vitasdk/vitasdk:latest`). Из сессии видно `gh run list -R Senty3kat/vitamidi`,
   но логи Actions отдают 403. Поэтому workflow кладёт `build-plugin.log` / `build-app.log` в ветку `ci-logs`:
   `git fetch -f origin ci-logs:refs/remotes/origin/ci-logs && git show origin/ci-logs:build-app.log`.
@@ -35,6 +41,7 @@ USB-MIDI хост для PS Vita: kernel-плагин `vitamidi.skprx` + тес�
 
 ## Открыто
 
-- Не проверено на железе: всё. Ждём отчёт с шагами 1–5.
+- Не проверено на железе: всё. Сейчас приоритет автора — Vita → Ableton (контроллер). Отчёты:
+  `ux0:data/vitamidi/controller_report.txt`, `ux0:data/vitamidi/report.txt`.
 - MIDI-выход (pipe_out открывается, но не используется), несколько устройств, хабы.
 - Подключение к VitaSampler / VitaStrummer — после проверки.
