@@ -36,7 +36,7 @@ jobs:
           export VITASDK="${VITASDK:-/usr/local/vitasdk}"
           export PATH="$VITASDK/bin:$PATH"
           set -o pipefail
-          cmake --build build --target vitamidi.skprx vitamidi_stubs 2>&1 | tee build-plugin.log || { grep -iE "error|undefined|warning" build-plugin.log | head -25 | sed 's/^/::error::/'; exit 1; }
+          cmake --build build --target vitamidi.skprx vitamidi_stubs 2>&1 | tee build-plugin.log || { { grep -iE "error|undefined" build-plugin.log | head -15; tail -12 build-plugin.log; } | sed 's/^/::error::/'; exit 1; }
           echo "=== stub libraries ==="
           find build -name '*.a' -print
 
@@ -46,7 +46,7 @@ jobs:
           export VITASDK="${VITASDK:-/usr/local/vitasdk}"
           export PATH="$VITASDK/bin:$PATH"
           set -o pipefail
-          cmake --build build 2>&1 | tee build-app.log || { grep -iE "error|undefined|cannot find|warning" build-app.log | head -25 | sed 's/^/::error::/'; exit 1; }
+          cmake --build build 2>&1 | tee build-app.log || { { grep -iE "error|undefined|cannot find" build-app.log | head -15; tail -12 build-app.log; } | sed 's/^/::error::/'; exit 1; }
           find build -name '*.a' -print | sed 's/^/::notice::/'
 
       - name: Collect
